@@ -1,22 +1,8 @@
 import textwrap
+from dummy_database import students
 
 COMMANDS = ("quit", "show", "retrieve", "add")
-
-# Simulated database
-students = [
-    {
-        "id": 0,
-        "name": "John Doe",
-        "marks": [4, 5, 1, 4, 5, 2, 5],
-        "info": "John is 22 y.o. Hobbies: music"
-    },
-    {
-        "id": 1,
-        "name": "Marry Black",
-        "marks": [4, 1, 3, 4, 5, 1, 2, 2],
-        "info": "John is 23 y.o. Hobbies: football"
-    }
-]
+ALLOWED_FIELD_TO_SEARCH = ("id", "name")
 
 
 def find_student(*, value: str, key: str = "name") -> dict | None:
@@ -60,13 +46,12 @@ def add_student(student_name: str, details: str | None):
 
 
 def retrieve_handle():
-    allowed_keys = ("id", "name")
     key = input(
         f"Would you like to search for a student by {
-            ', '.join(allowed_keys)}?\n"
+            ', '.join(ALLOWED_FIELD_TO_SEARCH)}?\n"
     )
 
-    if key not in allowed_keys:
+    if key not in ALLOWED_FIELD_TO_SEARCH:
         print(f"A student doesn't have a {key} property.\n")
         return
 
@@ -117,6 +102,15 @@ def main():
             print(f"Feature '{error}' is not ready for live.")
         except Exception as error:
             print(error)
+
+
+class InvalidInputError(Exception):
+    def __init__(self, message: str, input_value: str):
+        super().__init__(message)
+        self.input_value = input_value
+
+    def __str__(self):
+        return f"{self.args[0]}: {self.input_value}"
 
 
 main()
