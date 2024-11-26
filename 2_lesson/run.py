@@ -104,13 +104,4 @@ def main():
             print(error)
 
 
-class InvalidInputError(Exception):
-    def __init__(self, message: str, input_value: str):
-        super().__init__(message)
-        self.input_value = input_value
-
-    def __str__(self):
-        return f"{self.args[0]}: {self.input_value}"
-
-
 main()
