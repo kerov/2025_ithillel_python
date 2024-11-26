@@ -82,8 +82,13 @@ def retrieve_handle():
 
 
 def add_handle():
+    student_name = input("Enter student's name: ")
+    if not student_name:
+        raise Exception(
+            "The Name field is required during adding a new Student")
+
     add_student(
-        input("Enter student's name: "),
+        student_name,
         input("Enter student's details: ")
     )
 
