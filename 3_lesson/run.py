@@ -151,7 +151,8 @@ def handle_change():
     CHANGE_COMMANDS = {
         "1": "full update",
         "2": "update name",
-        "3": "update marks"
+        "3": "update marks",
+        "4": "add marks"
     }
     update_id = input("Enter student's id you wanna change: ")
 
@@ -195,6 +196,18 @@ def handle_change():
                 student_details(student)
             else:
                 print(f"❌ Can not change user's marks to {
+                      new_marks}\nPlease enter the correct marks")
+        elif change_action == "add marks":
+            new_marks = input(
+                "Enter a new marks. Using next template:\n'2,4,6,7,4':")
+            if validate_marks(new_marks):
+                united_marks = student["marks"] + \
+                    [int(item) for item in new_marks.split(",")]
+                update_student_by_field(
+                    id_=id_, value=united_marks, field='marks')
+                student_details(student)
+            else:
+                print(f"❌ Can not add new marks {
                       new_marks}\nPlease enter the correct marks")
 
 
