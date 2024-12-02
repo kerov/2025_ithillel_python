@@ -12,6 +12,9 @@ Features:
 # ==================================================
 # Simulated storage
 # ==================================================
+import curses
+from typing import Any
+
 students = {
     1: {
         "name": "John Doe",
@@ -67,6 +70,10 @@ def update_student(id_: int, payload: dict) -> dict:
     return payload
 
 
+def update_student_by_field(*, id_: int, value: Any, field: str):
+    students[id_][field] = value
+
+
 def student_details(student: dict) -> None:
     print(f"Detailed info: [{student['name']}]...")
 
@@ -96,14 +103,28 @@ def parse(data: str) -> tuple[str, list[int]]:
     # items == ["John Doe", "4,5...."]
     name, raw_marks = items
 
+    if (validate_marks(raw_marks) and validate_name(name)):
+        marks = [int(item) for item in raw_marks.split(",")]
+    else:
+        raise Exception(f"Marks are incorrect. Template: {
+                        template}")
+
+    return name, marks
+
+
+def validate_marks(raw_marks) -> bool:
     try:
         marks = [int(item) for item in raw_marks.split(",")]
     except ValueError as error:
         print(error)
-        raise Exception(f"Marks are incorrect. Template: {
-                        template}") from error
+        return False
+    return True
 
-    return name, marks
+
+def validate_name(student_full_name: str) -> bool:
+    if len(student_full_name.split(' ')) == 2:
+        return True
+    return False
 
 
 def ask_student_payload():
@@ -124,6 +145,57 @@ def ask_student_payload():
         name, marks = payload
 
     return {"name": name, "marks": marks}
+
+
+def handle_change():
+    CHANGE_COMMANDS = {
+        "1": "full update",
+        "2": "update name",
+        "3": "update marks"
+    }
+    update_id = input("Enter student's id you wanna change: ")
+
+    try:
+        id_ = int(update_id)
+    except ValueError as error:
+        raise Exception(
+            f"ID '{update_id}' is not correct value") from error
+    else:
+        student = search_student(id_)
+        if not student:
+            print(f"❌ There is no student with Id: {id_}")
+            return
+        print("Choose what you want to change.")
+        for key, action in CHANGE_COMMANDS.items():
+            print(f"{key}: {action.capitalize()}")
+
+        change_action = CHANGE_COMMANDS.get(
+            input("Enter the number of action:"))
+
+        if change_action == "full update":
+            if data := ask_student_payload():
+                update_student(id_, data)
+                print(f"✅ Student is updated")
+                student_details(student)
+        elif change_action == "update name":
+            new_name = input(
+                "Enter a new name. Using next template:\n'John Doe':")
+            if validate_name(new_name):
+                update_student_by_field(id_=id_, value=new_name, field='name')
+                student_details(student)
+            else:
+                print(f"❌ Can not change user's name to {
+                      new_name}\nPlease enter the correct name")
+        elif change_action == "update marks":
+            new_marks = input(
+                "Enter a new marks. Using next template:\n'2,4,6,7,4':")
+            if validate_marks(new_marks):
+                update_student_by_field(
+                    id_=id_, value=[int(item) for item in new_marks.split(",")], field='marks')
+                student_details(student)
+            else:
+                print(f"❌ Can not change user's marks to {
+                      new_marks}\nPlease enter the correct marks")
 
 
 def handle_management_command(command: str):
@@ -156,22 +228,7 @@ def handle_management_command(command: str):
             delete_student(id_)
 
     elif command == "change":
-        update_id = input("Enter student's id you wanna change: ")
-
-        try:
-            id_ = int(update_id)
-        except ValueError as error:
-            raise Exception(
-                f"ID '{update_id}' is not correct value") from error
-        else:
-            if data := ask_student_payload():
-                update_student(id_, data)
-                print(f"✅ Student is updated")
-                if student := search_student(id_):
-                    student_details(student)
-                else:
-                    print(f"❌ Can not change user with data {data}")
-
+        handle_change()
     elif command == "add":
         data = ask_student_payload()
         if data is None:
