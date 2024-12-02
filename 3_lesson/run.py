@@ -130,7 +130,6 @@ def validate_marks(raw_marks) -> bool:
     except ValueError as error:
         print(error)
         return False
-    return True
 
 
 def validate_name(student_full_name: str) -> bool:
