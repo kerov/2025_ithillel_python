@@ -115,10 +115,10 @@ def parse(data: str) -> tuple[str, list[int]]:
 def validate_marks(raw_marks) -> bool:
     try:
         marks = [int(item) for item in raw_marks.split(",")]
+        return all(1 <= mark <= 5 for mark in marks)
     except ValueError as error:
         print(error)
         return False
-    return True
 
 
 def validate_name(student_full_name: str) -> bool:
@@ -272,15 +272,18 @@ def handle_user_input():
     while True:
         command = input("Enter the command: ")
 
-        if command == "quit":
-            print(f"\nThanks for using Journal application. Bye!")
-            break
-        elif command == "help":
-            print(help_message)
-        elif command in MANAGEMENT_COMMANDS:
-            handle_management_command(command=command)
-        else:
-            print(f"Unrecognized command '{command}'")
+        try:
+            if command == "quit":
+                print(f"\nThanks for using Journal application. Bye!")
+                break
+            elif command == "help":
+                print(help_message)
+            elif command in MANAGEMENT_COMMANDS:
+                handle_management_command(command=command)
+            else:
+                print(f"Unrecognized command '{command}'")
+        except Exception as error:
+            print(error)
 
 
 handle_user_input()
