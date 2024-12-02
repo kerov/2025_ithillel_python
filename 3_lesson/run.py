@@ -12,6 +12,7 @@ Features:
 # ==================================================
 # Simulated storage
 # ==================================================
+
 students = {
     1: {
         "name": "John Doe",
@@ -63,7 +64,11 @@ def delete_student(id_: int):
 
 
 def update_student(id_: int, payload: dict) -> dict:
-    students[id_] = payload
+    if payload['name']:
+        students[id_]['name'] = payload['name']
+    if payload['marks']:
+        students[id_]['marks'] = payload['marks']
+
     return payload
 
 
@@ -74,7 +79,7 @@ def student_details(student: dict) -> None:
 # ==================================================
 # Handle user input
 # ==================================================
-def parse(data: str) -> tuple[str, list[int]]:
+def parse(data: str, all_fields_required) -> tuple[str, list[int]]:
     """Return student name and marks.
 
     user input template:
@@ -90,23 +95,48 @@ def parse(data: str) -> tuple[str, list[int]]:
 
     items = data.split(";")
 
-    if len(items) != 2:
+    if len(items) != 2 and all_fields_required:
         raise Exception(f"Incorrect data. Template: {template}")
 
-    # items == ["John Doe", "4,5...."]
-    name, raw_marks = items
+    name = None
+    marks = None
+    if len(items) == 2:
+        name, raw_marks = items
+        if validate_name(name) and validate_marks(raw_marks):
+            marks = [int(item) for item in raw_marks.split(",")]
+        else:
+            raise Exception(
+                f"Marks or Name are incorrect. Template: {template}")
+    elif len(items) == 1:
+        if validate_name(items[0]):
+            name = items[0]
+        elif validate_marks(items[0]):
+            marks = [int(item) for item in items[0].split(",")]
+        else:
+            raise Exception(f"Marks are incorrect. Template: {template}")
 
+    if name or marks:
+        return name, marks
+    else:
+        return None
+
+
+def validate_marks(raw_marks) -> bool:
     try:
         marks = [int(item) for item in raw_marks.split(",")]
+        return all(1 <= mark <= 5 for mark in marks)
     except ValueError as error:
         print(error)
-        raise Exception(f"Marks are incorrect. Template: {
-                        template}") from error
-
-    return name, marks
+        return False
 
 
-def ask_student_payload():
+def validate_name(student_full_name: str) -> bool:
+    if len(student_full_name.split(' ')) == 2:
+        return True
+    return False
+
+
+def ask_student_payload(all_fields_required=True):
     """
     Input template:
         'John Doe;4,5,4,5,4,5'
@@ -118,12 +148,35 @@ def ask_student_payload():
 
     prompt = "Enter student's payload using next template:\n'John Doe;4,5,4,5,4,5': "
 
-    if not (payload := parse(input(prompt))):
+    if not (payload := parse(input(prompt), all_fields_required)):
         return None
     else:
         name, marks = payload
 
     return {"name": name, "marks": marks}
+
+
+def handle_change():
+    update_id = input("Enter student's id you wanna change: ")
+
+    try:
+        id_ = int(update_id)
+    except ValueError as error:
+        raise Exception(
+            f"ID '{update_id}' is not correct value") from error
+    else:
+        student = search_student(id_)
+        if not student:
+            print(f"❌ There is no student with Id: {id_}")
+            return
+
+        if data := ask_student_payload(all_fields_required=False):
+            print(f'date = {data}')
+            update_student(id_, data)
+            print(f"✅ Student is updated")
+            student_details(student)
+        else:
+            print(f'Student was not updated')
 
 
 def handle_management_command(command: str):
@@ -156,22 +209,7 @@ def handle_management_command(command: str):
             delete_student(id_)
 
     elif command == "change":
-        update_id = input("Enter student's id you wanna change: ")
-
-        try:
-            id_ = int(update_id)
-        except ValueError as error:
-            raise Exception(
-                f"ID '{update_id}' is not correct value") from error
-        else:
-            if data := ask_student_payload():
-                update_student(id_, data)
-                print(f"✅ Student is updated")
-                if student := search_student(id_):
-                    student_details(student)
-                else:
-                    print(f"❌ Can not change user with data {data}")
-
+        handle_change()
     elif command == "add":
         data = ask_student_payload()
         if data is None:
@@ -201,16 +239,18 @@ def handle_user_input():
 
     while True:
         command = input("Enter the command: ")
-
-        if command == "quit":
-            print(f"\nThanks for using Journal application. Bye!")
-            break
-        elif command == "help":
-            print(help_message)
-        elif command in MANAGEMENT_COMMANDS:
-            handle_management_command(command=command)
-        else:
-            print(f"Unrecognized command '{command}'")
+        try:
+            if command == "quit":
+                print(f"\nThanks for using Journal application. Bye!")
+                break
+            elif command == "help":
+                print(help_message)
+            elif command in MANAGEMENT_COMMANDS:
+                handle_management_command(command=command)
+            else:
+                print(f"Unrecognized command '{command}'")
+        except Exception as error:
+            print(error)
 
 
 handle_user_input()
