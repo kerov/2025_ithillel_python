@@ -12,8 +12,6 @@ Features:
 # ==================================================
 # Simulated storage
 # ==================================================
-import curses
-from typing import Any
 
 students = {
     1: {
