@@ -11,79 +11,115 @@ Features:
 - persistent storage
 """
 
-import json
+import csv
 from pathlib import Path
 
 # ==================================================
 # Simulated storage
 # ==================================================
 files_dir = Path(__name__).absolute().parent / "files"
-storage_file = "students.json"
-
-
-LAST_ID_CONTEXT = 2
+storage_file = "students.csv"
 
 
 class StudentsStorage:
-    def __init__(self) -> None:
-        self.students = self.read_json(storage_file)
+    def __init__(self, storage_file: str, files_dir: Path) -> None:
+        self.storage_file = files_dir / storage_file
+        self.last_id_context = 0
+        self.students = {}
+        self.load_students()
 
-    @staticmethod
-    def read_json(filename: str) -> dict:
-        with open(files_dir / filename) as file:
-            return json.load(file)
+    def load_students(self) -> None:
+        self.students = self.convert_students(
+            self.read_csv()
+        )
+        self.last_id_context = self.find_max_id()
 
-    @staticmethod
-    def write_json(filename: str, data: dict) -> None:
-        with open(files_dir / filename, mode="w") as file:
-            return json.dump(data, file)
+    def read_csv(self) -> list:
+        with open(self.storage_file) as file:
+            return list(csv.DictReader(file))
+
+    def convert_students(self, rows: list) -> dict:
+        students_dict = {}
+        for row in rows:
+            student_id = int(row["id"])
+            students_dict[student_id] = {
+                "name": row["name"],
+                "marks": [int(mark) for mark in row["marks"].split(",")],
+                "info": row["info"]
+            }
+        return students_dict
+
+    def find_max_id(self) -> int:
+        return max(self.students.keys(), default=0)
+
+    def get_students(self) -> dict:
+        return self.students
+
+    def get_last_id(self) -> int:
+        return self.last_id_context
+
+    def inc_last_id(self) -> int:
+        self.last_id_context += 1
 
     def flush(self) -> None:
-        self.write_json(storage_file, self.students)
+        self.write_csv(self.storage_file, self.students)
 
+    def write_csv(self, filename: str, data: dict) -> None:
+        if not data:
+            return
 
-def represent_students():
-    for id_, student in StudentsStorage().students.items():
-        print(f"[{id_}] {student['name']}, marks: {student['marks']}")
+        fieldnames = ["id", "name", "marks", "info"]
+
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+
+            for id_, student in data.items():
+                writer.writerow({
+                    "id": id_,
+                    "name": student["name"],
+                    "marks": ",".join(map(str, student.get("marks", []))),
+                    "info": student.get("info", "")
+                })
 
 
 # ==================================================
 # CRUD (Create Read Update Delete)
 # ==================================================
 def add_student(student: dict) -> dict | None:
-    global LAST_ID_CONTEXT
-    storage = StudentsStorage()
+    storage = StudentsStorage(storage_file, files_dir)
 
     if len(student) != 2:
         return None
     elif not student.get("name") or not student.get("marks"):
         return None
     else:
-        LAST_ID_CONTEXT += 1
-        storage.students[str(LAST_ID_CONTEXT)] = student
+        storage.inc_last_id()
+        storage.students[str(storage.get_last_id())] = student
 
     storage.flush()
     return student
 
 
 def search_student(id_: int) -> dict | None:
-    storage = StudentsStorage()
-    return storage.students.get(str(id_))
+    storage = StudentsStorage(storage_file, files_dir)
+    return storage.students.get(id_)
 
 
 def delete_student(id_: int):
-    storage = StudentsStorage()
+    storage = StudentsStorage(storage_file, files_dir)
 
     if search_student(id_):
-        del storage.students[str(id_)]
+        del storage.students[id_]
+        storage.flush()
         print(f"Student with id '{id_}' is deleted")
     else:
         print(f"There is student '{id_}' in the storage")
 
 
 def update_student(id_: int, payload: dict) -> dict:
-    storage = StudentsStorage()
-    storage.students[str(id_)] = payload
+    storage = StudentsStorage(storage_file, files_dir)
+    storage.students[id_] = payload
     storage.flush()
 
     return payload
@@ -91,6 +127,12 @@ def update_student(id_: int, payload: dict) -> dict:
 
 def student_details(student: dict) -> None:
     print(f"Detailed info: [{student['name']}]...")
+
+
+def represent_students():
+    storage = StudentsStorage(storage_file, files_dir)
+    for id_, student in storage.get_students().items():
+        print(f"[{id_}] {student['name']}, marks: {student['marks']}")
 
 
 # ==================================================
