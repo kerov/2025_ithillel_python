@@ -27,9 +27,21 @@ class Price:
 
             return Price(value=self.value + other.value, currency=self.currency)
 
+    def __sub__(self, other: Any) -> "Price":
+        if not isinstance(other, Price):
+            raise ValueError("Can perform operation only with Pirces objects")
+        else:
+            if self.currency != other.currency:
+                raise ValueError(
+                    "Can perform operation only for same currencies")
+
+            return Price(value=self.value - other.value, currency=self.currency)
+
 
 phone = Price(value=200, currency="usd")
 tablet = Price(value=400, currency="usd")
 
 total: Price = phone + tablet
+tota2: Price = tablet - phone
 print(total)
+print(tota2)
