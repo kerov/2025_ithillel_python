@@ -28,34 +28,42 @@ class Configuration:
         Enter the context: Apply the configuration updates.
         """
 
-        # TODO: Save a copy of the current GLOBAL_CONFIG so it can be restored later.
+        self.original_config = GLOBAL_CONFIG.copy()
 
-        # TODO: Apply the updates to the GLOBAL_CONFIG.
+        logging.info(f"The GLOBAL_CONFIG {
+                     GLOBAL_CONFIG} will be updated by {self.updates}")
 
-        # TODO: Log the changes for debugging purposes.
+        if self.validator and not self.validator(self.updates):
+            raise ValueError("Validation failed!!!")
+
+        GLOBAL_CONFIG.update(self.updates)
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
         Exit the context: Restore the original configuration and handle validation or exceptions.
         """
+        if exc_type is not None:
+            logging.error(f'An error occured: {exc_value}')
 
-        # TODO: If a validator is provided, check the modified configuration.
-        # If the validation fails, log the error and restore the original configuration.
+        global GLOBAL_CONFIG
+        GLOBAL_CONFIG = self.original_config.copy()
 
-        # TODO: If an exception occurs within the context block, ensure the original configuration is restored.
-
-        # TODO: Log the restoration of the configuration for transparency.
-
-# Example validator function (Optional)
+        # Example validator function (Optional)
 
 
 def validate_config(config: dict) -> bool:
-    """
-    Example validator function to check the validity of the configuration.
-    Returns True if the configuration is valid, False otherwise.
-    """
+    for key, value in config.items():
+        if value is None:
+            return False
+        if key == "max_retries":
+            try:
+                if int(value) < 0:
+                    return False
+            except Exception as e:
+                logging.error("Error: %s", e)
+                return False
 
-    # TODO: Implement validation logic, e.g., ensure 'max_retries' is non-negative.
+    return True
 
 
 # Example usage (for students to test once implemented)
