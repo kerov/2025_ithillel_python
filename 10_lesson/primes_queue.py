@@ -1,4 +1,5 @@
 from multiprocessing import Process, Queue
+import time
 
 
 def get_primes_amount(num: int, result_queue: Queue) -> int:
@@ -33,7 +34,16 @@ def main():
         p.start()
         processes.append(p)
 
+    timeout = 100
+    start_time = time.time()
+
     while processes:
+        if time.time() - start_time > timeout:
+            for p in processes:
+                if p.is_alive():
+                    p.terminate()
+                    print(f'Stop the {p} process')
+            break
         if not result_queue.empty():
             num, result = result_queue.get()
             print(f"For the number {num}, result: {result}")
